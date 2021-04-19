@@ -20,9 +20,6 @@ from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
 from utils import ThousandLandmarksDataset
 from utils import restore_landmarks_batch, create_submission
 
-import albumentations
-import cv2
-
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
@@ -55,33 +52,6 @@ def train(model, loader, loss_fn, optimizer, device):
         optimizer.step()
 
     return np.mean(train_loss)
-
-
-class FaceHorizontalFlip(albumentations.HorizontalFlip):
-    def apply_to_keypoints(self, keypoints, **params):
-        keypoints = np.array(keypoints)
-        keypoints[:, 0] = (params['cols'] - 1) - keypoints[:, 0]
-        lm = keypoints
-
-        nm = np.zeros_like(lm)
-
-        nm[:64,:]     = lm[64:128,:]     # [  0, 63]  -> [ 64, 127]:  i --> i + 64
-        nm[64:128,:]  = lm[:64,:]        # [ 64, 127] -> [  0, 63]:   i --> i - 64
-        nm[128:273,:] = lm[272:127:-1,:] # [128, 272] -> [128, 272]:  i --> 400 - i
-        nm[273:337,:] = lm[337:401,:]    # [273, 336] -> [337, 400]:  i --> i + 64
-        nm[337:401,:] = lm[273:337,:]    # [337, 400] -> [273, 336]:  i --> i - 64
-        nm[401:464,:] = lm[464:527,:]    # [401, 463] -> [464, 526]:  i --> i + 64
-        nm[464:527,:] = lm[401:464,:]    # [464, 526] -> [401, 463]:  i --> i - 64
-        nm[527:587,:] = lm[527:587,:]    # [527, 586] -> [527, 586]:  i --> i
-        nm[587:714,:] = lm[714:841,:]    # [587, 713] -> [714, 840]:  i --> i + 127
-        nm[714:841,:] = lm[587:714,:]    # [714, 840] -> [587, 713]:  i --> i - 127
-        nm[841:873,:] = lm[872:840:-1,:] # [841, 872] -> [841, 872]:  i --> 1713 - i
-        nm[873:905,:] = lm[904:872:-1,:] # [873, 904] -> [873, 904]:  i --> 1777 - i
-        nm[905:937,:] = lm[936:904:-1,:] # [905, 936] -> [905, 936]:  i --> 1841 - i
-        nm[937:969,:] = lm[968:936:-1,:] # [937, 968] -> [937, 968]:  i --> 1905 - i
-        nm[969:971,:] = lm[970:968:-1,:] # [969, 970] -> [969, 970]:  i --> 1939 - i
-
-        return nm
 
 
 def validate(model, loader, loss_fn, device):
@@ -122,22 +92,12 @@ def main(args):
     os.makedirs("runs", exist_ok=True)
 
     # 1. prepare data & models
-    augmentation = albumentations.Compose([
-        FaceHorizontalFlip(p=1.0),
-        albumentations.RandomBrightness(limit=0.2, p=0.5),
-        albumentations.RandomContrast(limit=0.2, p=0.5),
-        albumentations.Blur(blur_limit=3, p=0.5),
-        albumentations.Rotate(border_mode=cv2.BORDER_CONSTANT, limit=20, p=0.8),
-    ], keypoint_params=albumentations.KeypointParams(format='xy'))
-
     train_transforms = transforms.Compose([
         ScaleMinSideToSize((CROP_SIZE, CROP_SIZE)),
         CropCenter(CROP_SIZE),
         TransformByKeys(transforms.ToPILImage(), ("image",)),
         TransformByKeys(transforms.ToTensor(), ("image",)),
         TransformByKeys(transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.25, 0.25, 0.25]), ("image",)),
-        lambda image: augmentation(image=np.array(image))["image"],
-        lambda image: augmentation(image=np.array(image))["keypoints"],
     ])
 
     print("Reading data...")
