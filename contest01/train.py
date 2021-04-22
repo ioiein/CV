@@ -10,18 +10,16 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
-from tqdm.notebook import tqdm
+import tqdm
 from torch.nn import functional as fnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
-from utils import NUM_PTS, CROP_SIZE
-from utils import CropFrame, FlipHorizontal, Rotator, CropRectangle, ChangeBrightnessContrast
-from utils import AdaptiveWingLoss
+from utils import NUM_PTS, CROP_SIZE, CropFrame, FlipHorizontal, Rotator, CropRectangle, ChangeBrightnessContrast
 from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
 from utils import ThousandLandmarksDataset
 from utils import restore_landmarks_batch, create_submission
+from model import RESNEXT_steroid
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -56,26 +54,29 @@ def train(model, loader, loss_fn, optimizer, device):
 
     return np.mean(train_loss)
 
+
 def weighted_mse_loss(preds, ground_true, weights):
-    return torch.mean(weights * torch.mean((preds - ground_true)**2, axis=1))
+    return torch.mean(weights * torch.mean((preds - ground_true) ** 2, axis=1))
 
 def validate(model, loader, loss_fn, device):
     model.eval()
     val_loss = []
-    val_mse_los =[]
+    val_mse_loss = []
     for batch in tqdm.tqdm(loader, total=len(loader), desc="validation..."):
         images = batch["image"].to(device)
         landmarks = batch["landmarks"]
 
         with torch.no_grad():
             pred_landmarks = model(images).cpu()
-        loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
+        loss = loss_fn(pred_landmarks, landmarks, reduction="mean") #, reduction="mean"
         val_loss.append(loss.item())
         weights_mse = (1 / batch['scale_coef']) ** 2
-        mse_loss = weighted_mse_loss(pred_landmarks, landmarks, weights_mse)
-        val_mse_los.append(mse_loss)
+        mse_loss = weighted_mse_loss(pred_landmarks,
+                                     landmarks,
+                                     weights_mse)
+        val_mse_loss.append(mse_loss.item())
 
-    return (np.mean(val_loss), np.mean(val_mse_los))
+    return (np.mean(val_loss), np.mean(val_mse_loss))
 
 
 def predict(model, loader, device):
@@ -101,14 +102,22 @@ def main(args):
     os.makedirs("runs", exist_ok=True)
 
     # 1. prepare data & models
+    # train_transforms = transforms.Compose([
+    #     ScaleMinSideToSize((CROP_SIZE, CROP_SIZE)),
+    #     CropCenter(CROP_SIZE),
+    #     TransformByKeys(transforms.ToPILImage(), ("image",)),
+    #     TransformByKeys(transforms.ToTensor(), ("image",)),
+    #     TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ("image",)), # (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+    # ])
+
     crop_size = (224, 224)
     train_transforms = transforms.Compose([
         CropFrame(9),
-        ScaleMinSideToSize(crop_size),
+        ScaleMinSideToSize((CROP_SIZE, CROP_SIZE)),
+        CropCenter(CROP_SIZE),
         FlipHorizontal(),
         Rotator(30),
-        #CropCenter(CROP_SIZE),
-        CropRectangle(crop_size),
+        # CropRectangle(crop_size),
         ChangeBrightnessContrast(alpha_std=0.05, beta_std=10),
         TransformByKeys(transforms.ToPILImage(), ("image",)),
         TransformByKeys(transforms.ToTensor(), ("image",)),
@@ -117,13 +126,13 @@ def main(args):
 
     valid_transforms = transforms.Compose([
         CropFrame(9),
-        ScaleMinSideToSize(crop_size),
-        CropRectangle(crop_size),
+        ScaleMinSideToSize((CROP_SIZE, CROP_SIZE)),
+        CropCenter(CROP_SIZE),
+        # CropRectangle(crop_size),
         TransformByKeys(transforms.ToPILImage(), ("image",)),
         TransformByKeys(transforms.ToTensor(), ("image",)),
         TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ("image",)),
     ])
-
     print("Reading data...")
     train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train")
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
@@ -133,20 +142,41 @@ def main(args):
                                 shuffle=False, drop_last=False)
 
     device = torch.device("cuda:0") if args.gpu and torch.cuda.is_available() else torch.device("cpu")
+    print(device)
 
     print("Creating model...")
     model = models.resnet18(pretrained=True)
-    #model.requires_grad_(False)
+    # model.requires_grad_(False)
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
-    #model.fc.requires_grad_(True)
+    # model.fc.requires_grad_(True)
 
     model.to(device)
     for parameter in model.parameters():
         parameter.requires_grad = True
+    # model = models.resnext50_32x4d(pretrained=True)
+    # model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
+    # checkpoint = torch.load("./runs/baseline_full3_best.pth", map_location='cpu')
+    # model.load_state_dict(checkpoint, strict=True)
+    # model = RESNEXT_steroid()
+    # model.to(device)
+    # for p in model.base_net.parameters():
+    #    p.requires_grad = False
+    # model.base_net[8].requires_grad = True
+    # for p in model.fc.parameters():
+    #    p.requires_grad = True
+    # for p in model.linear7.parameters():
+    #    p.requires_grad = True
+    # for p in model.attention.parameters():
+    #    p.requires_grad = True
+    # for p in model.linear1.parameters():
+    #    p.requires_grad = True
+    # model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=True)
-    #loss_fn = fnn.mse_loss
+    # criterion = AdaptiveWingLoss()
+    # criterion = torch.nn.MSELoss(size_average=True)
+    # loss_fn = fnn.mse_loss
     loss_fn = fnn.l1_loss
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=1/np.sqrt(10),
@@ -163,7 +193,7 @@ def main(args):
         train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
         val_loss, mse_loss = validate(model, val_dataloader, loss_fn, device=device)
         lr_scheduler.step(val_loss)
-        print("Epoch #{:2}:\ttrain loss: {:5.2}\tval loss: {:5.2}\tmse_loss: {:5.2}".format(
+        print("Epoch #{:2}:\ttrain loss: {:5.2}\tval loss: {:5.2}\tmse loss: {:5.2}".format(
             epoch, train_loss, val_loss, mse_loss))
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -171,7 +201,7 @@ def main(args):
                 torch.save(model.state_dict(), fp)
 
     # 3. predict
-    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), valid_transforms, split="test")
+    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), train_transforms, split="test")
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                  shuffle=False, drop_last=False)
 

@@ -9,6 +9,7 @@ from torch.utils import data
 import torch.nn as nn
 import random
 
+
 np.random.seed(1234)
 torch.manual_seed(1234)
 
@@ -66,76 +67,97 @@ class CropCenter(object):
         return sample
 
 
+class TransformByKeys(object):
+    def __init__(self, transform, names):
+        self.transform = transform
+        self.names = set(names)
+
+    def __call__(self, sample):
+        for name in self.names:
+            if name in sample:
+                sample[name] = self.transform(sample[name])
+
+        return sample
+
 class CropRectangle(object):
-    def __init__(self, size=(CROP_SIZE_H,CROP_SIZE_W), elem_name='image'):
+    def __init__(self, size=(CROP_SIZE_H, CROP_SIZE_W), elem_name='image'):
         self.size = size
         self.elem_name = elem_name
 
     def __call__(self, sample):
-        image = sample[self.elem_name]
-        h, w, _ = image.shape
+        img = sample[self.elem_name]
+        h, w, _ = img.shape
 
         margin_h = (h - self.size[0]) // 2
         margin_w = (w - self.size[1]) // 2
-        sample[self.elem_name] = image[margin_h:margin_h + self.size[0], margin_w:margin_w + self.size[1]]
+        sample[self.elem_name] = img[margin_h:margin_h + self.size[0], margin_w:margin_w + self.size[1]]
         sample["crop_margin_x"] = margin_w
         sample["crop_margin_y"] = margin_h
 
         if 'landmarks' in sample:
             landmarks = sample['landmarks'].reshape(-1, 2)
-            landmarks -= torch.tensor((margin_w, margin_h), dtype=landmarks.dtype)[None:]
+            # print('Crop')
+            # print(landmarks[:5])
+            landmarks -= torch.tensor((margin_w, margin_h), dtype=landmarks.dtype)[None, :]
+            # print(landmarks[:5])
+            # print('End crop')
             sample['landmarks'] = landmarks.reshape(-1)
 
         return sample
 
+
+# Преобразование для удаление черной рамки вокруг изображения
 class CropFrame(object):
     def __init__(self, limit=9, elem_name='image'):
         self.limit = limit
         self.elem_name = elem_name
 
     def __call__(self, sample):
-        image = sample[self.elem_name]
+        img = sample[self.elem_name]
         h, w, _ = img.shape
 
-        brightness = np.mean(image, axis=2)
+        brightness = np.mean(img, axis=2)
         top = 0
-        while (top < h) and np.max(brightness[top,:]) <= self.limit:
+        while (top < h) and np.max(brightness[top, :]) <= self.limit:
             top += 1
 
         bottom = h - 1
-        while (bottom > 0) and np.max(brightness[bottom,:]) <= self.limit:
+        while (bottom > 0) and np.max(brightness[bottom, :]) <= self.limit:
             bottom += -1
 
         left = 0
-        while (left < w) and np.max(brightness[:,left]) <= self.limit:
+        while (left < w) and np.max(brightness[:, left]) <= self.limit:
             left += 1
 
         right = w - 1
-        while (right > 0) and np.max(brightness[:,right]) <= self.limit:
+        while (right > 0) and np.max(brightness[:, right]) <= self.limit:
             right += -1
 
-        sample[self.elem_name] = image[top:bottom+1, left:right+1,:]
+        sample[self.elem_name] = img[top:bottom+1, left:right+1, :]
 
         sample["crop_top"] = top
         sample["crop_left"] = left
 
         if 'landmarks' in sample:
             landmarks = sample['landmarks'].reshape(-1, 2)
-            landmarks -= torch.tensor((left,top),dtype=landmarks.dtype)[None,:]
+            landmarks -= torch.tensor((left, top), dtype=landmarks.dtype)[None, :]
             sample['landmarks'] = landmarks.reshape(-1)
 
         return sample
 
 
+# Преобразование - отражение от вертикальной оси
 class FlipHorizontal(object):
     def __init__(self, p=0.5, elem_name='image'):
-        self.p = p
         self.elem_name = elem_name
+        self.p = p
 
     def __call__(self, sample):
         if random.random() < self.p:
             w = sample[self.elem_name].shape[1]
+
             sample[self.elem_name] = cv2.flip(sample[self.elem_name], 1)
+
             if 'landmarks' in sample:
                 landmarks = sample['landmarks'].reshape(-1, 2)
                 landmarks[:, 0] = torch.tensor(w, dtype=landmarks.dtype) - landmarks[:, 0]
@@ -174,36 +196,8 @@ class FlipHorizontal(object):
 
         return sample
 
-class Rotator(object):
-    def __init__(self,max_angle=0,elem_name='image'):
-        self.max_angle = max_angle
-        self.elem_name = elem_name
 
-    def __call__(self, sample):
-        angle = random.uniform(-self.max_angle, self.max_angle)
-        center = (sample[self.elem_name].shape[0] // 2, sample[self.elem_name].shape[1] // 2)
-        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1)
-        sample[self.elem_name] = cv2.warpAffine(
-            sample[self.elem_name],
-            rotation_matrix,
-            (sample[self.elem_name].shape[1], sample[self.elem_name].shape[0])
-        )
-
-        if 'landmarks' in sample:
-            landmarks = sample['landmarks'].float()
-            landmarks = self.rotate_landmarks(center, landmarks, angle)
-            sample['landmarks'] = landmarks.reshape(-1)
-        return sample
-
-    def rotate_landmarks(self, center, points, angle):
-        x_c, y_c = center
-        angle_rad = -angle * np.pi / 180
-        points = points.reshape(-1, 2)
-        landmarks = points.clone().detach()
-        landmarks[:, 0] = x_c + np.cos(angle_rad) * (points[:, 0] - x_c) - np.sin(angle_rad) * (points[:, 1] - y_c)
-        landmarks[:, 1] = y_c + np.sin(angle_rad) * (points[:, 0] - x_c) + np.cos(angle_rad) * (points[:, 1] - y_c)
-        return landmarks
-
+# Преобразование - изменение яркость/контрастности
 class ChangeBrightnessContrast(object):
     def __init__(self, alpha_std=1, beta_std=0, elem_name='image'):
         self.elem_name = elem_name
@@ -218,17 +212,39 @@ class ChangeBrightnessContrast(object):
                                                      beta=beta)
         return sample
 
-class TransformByKeys(object):
-    def __init__(self, transform, names):
-        self.transform = transform
-        self.names = set(names)
+
+# Преобразование - поворот вокруг центра
+class Rotator(object):
+    def __init__(self, max_angle=0, elem_name='image'):
+        self.elem_name = elem_name
+        self.max_angle = max_angle
 
     def __call__(self, sample):
-        for name in self.names:
-            if name in sample:
-                sample[name] = self.transform(sample[name])
-
+        angle = random.uniform(-self.max_angle, self.max_angle)
+        center = (sample[self.elem_name].shape[0]//2,
+                  sample[self.elem_name].shape[1] // 2)
+        rot_mat = cv2.getRotationMatrix2D(center, angle, 1)
+        sample[self.elem_name] = cv2.warpAffine(
+            sample[self.elem_name],
+            rot_mat,
+            (sample[self.elem_name].shape[1],
+                sample[self.elem_name].shape[0]
+             )
+        )
+        if 'landmarks' in sample:
+            landmarks = sample['landmarks'].float()
+            landmarks = self.rotate_landmarks(center, landmarks, angle)
+            sample['landmarks'] = landmarks.reshape(-1)
         return sample
+
+    def rotate_landmarks(self, center, points, angle):
+        x_c, y_c = center
+        angle_rad = -angle * np.pi / 180
+        points = points.reshape(-1, 2)
+        landmarks = points.clone().detach()
+        landmarks[:, 0] = x_c + np.cos(angle_rad) * (points[:, 0] - x_c) - np.sin(angle_rad) * (points[:, 1] - y_c)
+        landmarks[:, 1] = y_c + np.sin(angle_rad) * (points[:, 0] - x_c) + np.cos(angle_rad) * (points[:, 1] - y_c)
+        return landmarks
 
 
 class ThousandLandmarksDataset(data.Dataset):
@@ -321,25 +337,33 @@ def create_submission(path_to_data, test_predictions, path_to_submission_file):
         needed_points = points_for_image[point_index_list].astype(np.int)
         wf.write(file_name + ',' + ','.join(map(str, needed_points.reshape(2 * len(point_index_list)))) + '\n')
 
+
 class AdaptiveWingLoss(nn.Module):
     def __init__(self, omega=14, theta=0.5, epsilon=1, alpha=2.1):
-        super(AdaptiveWingLoss,self).__init__()
+        super(AdaptiveWingLoss, self).__init__()
         self.omega = omega
         self.theta = theta
         self.epsilon = epsilon
         self.alpha = alpha
 
-    def forward(self, prediction, target):
+    def forward(self, pred, target):
+        '''
+        :param pred: BxNxHxH
+        :param target: BxNxHxH
+        :return:
+        '''
+
         y = target
-        y_hat = prediction
+        y_hat = pred
+        delta_y = (y - y_hat).abs()
         delta_y = (y - y_hat).abs()
         delta_y1 = delta_y[delta_y < self.theta]
         delta_y2 = delta_y[delta_y >= self.theta]
         y1 = y[delta_y < self.theta]
         y2 = y[delta_y >= self.theta]
         loss1 = self.omega * torch.log(1 + torch.pow(delta_y1 / self.omega, self.alpha - y1))
-        A = self.omega * (1 / (1 + torch.pow(self.theta / self.epsilon, self.alpha - y2))) * (self.alpha - y2) * \
-            (torch.pow(self.theta / self.epsilon, self.alpha - y2 - 1)) * (1 / self.epsilon)
+        A = self.omega * (1 / (1 + torch.pow(self.theta / self.epsilon, self.alpha - y2))) * (self.alpha - y2) * (
+            torch.pow(self.theta / self.epsilon, self.alpha - y2 - 1)) * (1 / self.epsilon)
         C = self.theta * A - self.omega * torch.log(1 + torch.pow(self.theta / self.epsilon, self.alpha - y2))
         loss2 = A * delta_y2 - C
         return (loss1.sum() + loss2.sum()) / (len(loss1) + len(loss2))
