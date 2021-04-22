@@ -20,6 +20,7 @@ from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
 from utils import ThousandLandmarksDataset
 from utils import restore_landmarks_batch, create_submission
 from model import RESNEXT_steroid
+from torch.cuda.amp import autocast, GradScaler
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -44,13 +45,15 @@ def train(model, loader, loss_fn, optimizer, device):
         images = batch["image"].to(device)  # B x 3 x CROP_SIZE x CROP_SIZE
         landmarks = batch["landmarks"]  # B x (2 * NUM_PTS)
 
-        pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
-        loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
+        with autocast():
+            pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
+            loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         train_loss.append(loss.item())
 
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
 
     return np.mean(train_loss)
 
@@ -146,10 +149,10 @@ def main(args):
 
     print("Creating model...")
     model = models.resnet18(pretrained=True)
-    #model.requires_grad_(True)
+    model.requires_grad_(True)
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
-    #model.fc.requires_grad_(True)
+    model.fc.requires_grad_(True)
 
     model.to(device)
     for parameter in model.parameters():
@@ -192,6 +195,7 @@ def main(args):
     # 2. train & validate
     print("Ready for training...")
     best_val_loss = np.inf
+    scaler = GradScaler()
     for epoch in range(args.epochs):
         train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
         val_loss, mse_loss = validate(model, val_dataloader, loss_fn, device=device)
@@ -204,7 +208,7 @@ def main(args):
                 torch.save(model.state_dict(), fp)
 
     # 3. predict
-    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), train_transforms, split="test")
+    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), valid_transforms, split="test")
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                  shuffle=False, drop_last=False)
 
