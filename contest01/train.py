@@ -146,16 +146,19 @@ def main(args):
 
     print("Creating model...")
     model = models.resnet18(pretrained=True)
-    # model.requires_grad_(False)
+    #model.requires_grad_(True)
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
-    # model.fc.requires_grad_(True)
+    #model.fc.requires_grad_(True)
 
     model.to(device)
     for parameter in model.parameters():
         parameter.requires_grad = True
-    # model = models.resnext50_32x4d(pretrained=True)
-    # model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
+    #model = models.resnext50_32x4d(pretrained=True)
+    #model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
+    #model.to(device)
+    #for parameter in model.parameters():
+    #    parameter.requires_grad = True
     # checkpoint = torch.load("./runs/baseline_full3_best.pth", map_location='cpu')
     # model.load_state_dict(checkpoint, strict=True)
     # model = RESNEXT_steroid()
