@@ -20,7 +20,6 @@ from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
 from utils import ThousandLandmarksDataset
 from utils import restore_landmarks_batch, create_submission
 from model import RESNEXT_steroid
-from torch.cuda.amp import autocast, GradScaler
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -37,7 +36,6 @@ def parse_arguments():
     parser.add_argument("--gpu", action="store_true")
     return parser.parse_args()
 
-scaler = GradScaler()
 
 def train(model, loader, loss_fn, optimizer, device):
     model.train()
@@ -46,15 +44,13 @@ def train(model, loader, loss_fn, optimizer, device):
         images = batch["image"].to(device)  # B x 3 x CROP_SIZE x CROP_SIZE
         landmarks = batch["landmarks"]  # B x (2 * NUM_PTS)
 
-        with autocast():
-            pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
-            loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
+        loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
         train_loss.append(loss.item())
 
         optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
     return np.mean(train_loss)
 
