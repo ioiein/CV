@@ -37,6 +37,7 @@ def parse_arguments():
     parser.add_argument("--gpu", action="store_true")
     return parser.parse_args()
 
+scaler = GradScaler()
 
 def train(model, loader, loss_fn, optimizer, device):
     model.train()
@@ -195,7 +196,6 @@ def main(args):
     # 2. train & validate
     print("Ready for training...")
     best_val_loss = np.inf
-    scaler = GradScaler()
     for epoch in range(args.epochs):
         train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
         val_loss, mse_loss = validate(model, val_dataloader, loss_fn, device=device)
