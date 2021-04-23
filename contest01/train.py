@@ -121,7 +121,10 @@ def main(args):
         ChangeBrightnessContrast(alpha_std=0.05, beta_std=10),
         TransformByKeys(transforms.ToPILImage(), ("image",)),
         TransformByKeys(transforms.ToTensor(), ("image",)),
-        TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ("image",)),
+        TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                             std=[0.229, 0.224, 0.225]),
+                        ("image",)
+                        ),
     ])
 
     valid_transforms = transforms.Compose([
@@ -131,7 +134,10 @@ def main(args):
         # CropRectangle(crop_size),
         TransformByKeys(transforms.ToPILImage(), ("image",)),
         TransformByKeys(transforms.ToTensor(), ("image",)),
-        TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ("image",)),
+        TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                             std=[0.229, 0.224, 0.225]),
+                        ("image",)
+                        ),
     ])
     print("Reading data...")
     train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train")
@@ -142,45 +148,32 @@ def main(args):
                                 shuffle=False, drop_last=False)
 
     device = torch.device("cuda:0") if args.gpu and torch.cuda.is_available() else torch.device("cpu")
-    print(device)
 
     print("Creating model...")
-    model = models.resnet18(pretrained=True)
-    model.requires_grad_(True)
-
-    model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
-    model.fc.requires_grad_(True)
-
-    model.to(device)
-    for parameter in model.parameters():
-        parameter.requires_grad = True
-    #model = models.resnext50_32x4d(pretrained=True)
-    #model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
-    #model.to(device)
-    #for parameter in model.parameters():
-    #    parameter.requires_grad = True
+    # model = models.resnext50_32x4d(pretrained=True)
+    # model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     # checkpoint = torch.load("./runs/baseline_full3_best.pth", map_location='cpu')
     # model.load_state_dict(checkpoint, strict=True)
-    # model = RESNEXT_steroid()
-    # model.to(device)
-    # for p in model.base_net.parameters():
-    #    p.requires_grad = False
+    model = RESNEXT_steroid()
+    model.to(device)
+    for p in model.base_net.parameters():
+        p.requires_grad = False
     # model.base_net[8].requires_grad = True
-    # for p in model.fc.parameters():
-    #    p.requires_grad = True
-    # for p in model.linear7.parameters():
-    #    p.requires_grad = True
-    # for p in model.attention.parameters():
-    #    p.requires_grad = True
-    # for p in model.linear1.parameters():
-    #    p.requires_grad = True
+    for p in model.fc.parameters():
+        p.requires_grad = True
+    for p in model.linear7.parameters():
+        p.requires_grad = True
+    for p in model.attention.parameters():
+        p.requires_grad = True
+    for p in model.linear1.parameters():
+        p.requires_grad = True
     # model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=True)
     # criterion = AdaptiveWingLoss()
     # criterion = torch.nn.MSELoss(size_average=True)
     # loss_fn = fnn.mse_loss
-    loss_fn = fnn.l1_loss
+    criterion = fnn.l1_loss
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=1/np.sqrt(10),
         patience=4,
@@ -193,8 +186,8 @@ def main(args):
     print("Ready for training...")
     best_val_loss = np.inf
     for epoch in range(args.epochs):
-        train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
-        val_loss, mse_loss = validate(model, val_dataloader, loss_fn, device=device)
+        train_loss = train(model, train_dataloader, criterion, optimizer, device=device)
+        val_loss, mse_loss = validate(model, val_dataloader, criterion, device=device)
         lr_scheduler.step(val_loss)
         print("Epoch #{:2}:\ttrain loss: {:5.2}\tval loss: {:5.2}\tmse loss: {:5.2}".format(
             epoch, train_loss, val_loss, mse_loss))
@@ -204,7 +197,7 @@ def main(args):
                 torch.save(model.state_dict(), fp)
 
     # 3. predict
-    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), valid_transforms, split="test")
+    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), train_transforms, split="test")
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                  shuffle=False, drop_last=False)
 
