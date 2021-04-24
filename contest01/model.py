@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 import torch
-from utils import NUM_PTS
+from utils import NUM_PTS, CROP_SIZE
 
 
 class ConvBlock(nn.Module):
