@@ -14,6 +14,7 @@ import tqdm
 from torch.nn import functional as fnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from utils import NUM_PTS, CROP_SIZE
 from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
@@ -132,6 +133,8 @@ def main(args):
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     model.fc.requires_grad_(True)
+    checkpoint = torch.load("baseline_best.pth", map_location='cpu')
+    model.load_state_dict(checkpoint, strict=True)
 
     model.to(device)
 
@@ -140,6 +143,13 @@ def main(args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=True)
     loss_fn = fnn.mse_loss
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=1 / np.sqrt(10),
+        patience=4,
+        verbose=True, threshold=0.01,
+        threshold_mode='abs', cooldown=0,
+        min_lr=1e-6, eps=1e-08
+    )
 
     # 2. train & validate
     print("Ready for training...")
@@ -147,6 +157,7 @@ def main(args):
     for epoch in range(args.epochs):
         train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
         val_loss, real_val_loss = validate(model, val_dataloader, loss_fn, device=device)
+        lr_scheduler.step(val_loss)
         print("Epoch #{:2}:\ttrain loss: {:5.3}\tval loss: {:5.3} /{:5.3}".format(epoch, train_loss, val_loss, real_val_loss))
         if val_loss < best_val_loss:
             best_val_loss = val_loss
