@@ -111,7 +111,7 @@ def main(args):
     device = torch.device("cuda:0") if args.gpu and torch.cuda.is_available() else torch.device("cpu")
 
     print("Creating model...")
-    model = models.resnet18(pretrained=True)
+    model = models.resnet18()
     model.requires_grad_(True)
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
@@ -120,9 +120,6 @@ def main(args):
     model.to(device)
 
     for param in model.parameters():
-        param.requires_grad = True
-
-    for param in model.classifier.parameters():
         param.requires_grad = True
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=True)
