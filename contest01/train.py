@@ -133,8 +133,12 @@ def main(args):
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     model.fc.requires_grad_(True)
-    checkpoint = torch.load("baseline_best.pth", map_location='cpu')
-    model.load_state_dict(checkpoint, strict=True)
+    try:
+        checkpoint = torch.load("./runs/baseline_best.pth", map_location='cpu')
+        model.load_state_dict(checkpoint, strict=True)
+        print("checkpoints loaded")
+    finally:
+        print("checkpoints not loaded")
 
     model.to(device)
 
