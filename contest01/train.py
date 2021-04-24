@@ -137,7 +137,7 @@ def main(args):
         checkpoint = torch.load("./runs/baseline_best.pth", map_location='cpu')
         model.load_state_dict(checkpoint, strict=True)
         print("checkpoints loaded")
-    finally:
+    except FileNotFoundError as e:
         print("checkpoints not loaded")
 
     model.to(device)
