@@ -47,10 +47,10 @@ class SEModule(nn.Module):
         return input * x
 
 
-class RESNEXT_steroid(nn.Module):
+class RESNET_steroid(nn.Module):
     def __init__(self):
         super(RESNEXT_steroid, self).__init__()
-        model = models.resnext50_32x4d()
+        model = models.resnet18()
         model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
         #checkpoint = torch.load("./runs/baseline_full4_best.pth", map_location='cpu')
         #model.load_state_dict(checkpoint, strict=True)
