@@ -126,6 +126,7 @@ def main(args):
                                 shuffle=False, drop_last=False)
 
     device = torch.device("cuda:0") if args.gpu and torch.cuda.is_available() else torch.device("cpu")
+    print(device)
 
     print("Creating model...")
     #model = models.resnet18()
