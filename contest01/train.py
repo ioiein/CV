@@ -97,7 +97,7 @@ def main(args):
         CropCenter(CROP_SIZE),
         TransformByKeys(transforms.ToPILImage(), ("image",)),
         TransformByKeys(transforms.ToTensor(), ("image",)),
-        TransformByKeys(transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.25, 0.25, 0.25]), ("image",)),
+        TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ("image",)),
     ])
 
     print("Reading data...")
@@ -112,12 +112,18 @@ def main(args):
 
     print("Creating model...")
     model = models.resnet18(pretrained=True)
-    model.requires_grad_(False)
+    model.requires_grad_(True)
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     model.fc.requires_grad_(True)
 
     model.to(device)
+
+    for param in model.parameters():
+        param.requires_grad = True
+
+    for param in model.classifier.parameters():
+        param.requires_grad = True
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=True)
     loss_fn = fnn.mse_loss
