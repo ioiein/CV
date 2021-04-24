@@ -128,7 +128,8 @@ def main(args):
     device = torch.device("cuda:0") if args.gpu and torch.cuda.is_available() else torch.device("cpu")
 
     print("Creating model...")
-    model = models.resnet18()
+    #model = models.resnet18()
+    model = models.resnext50_32x4d()
     model.requires_grad_(True)
 
     model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
