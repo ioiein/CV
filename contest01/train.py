@@ -40,7 +40,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def train(model, loader, loss_fn, optimizer, device, scaler):
+def train(model, loader, loss_fn, optimizer, device):
     model.train()
     train_loss = []
     for batch in tqdm.tqdm(loader, total=len(loader), desc="training..."):
