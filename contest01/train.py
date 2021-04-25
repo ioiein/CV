@@ -22,7 +22,7 @@ from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
 from utils import ThousandLandmarksDataset
 from utils import restore_landmarks_batch, create_submission
 
-from model import AvgResNet, CnnResNet
+from model import AvgResNet, get_model
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -138,7 +138,8 @@ def main(args):
 
     #model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     #model.fc.requires_grad_(True)
-    model = CnnResNet()
+    #model = AvgResNet()
+    model = get_model(NUM_PTS, 0.2, True)
     try:
         checkpoint = torch.load(os.path.join("runs", f"{args.name}_best.pth"), map_location='cpu')
         model.load_state_dict(checkpoint, strict=True)

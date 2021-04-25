@@ -109,40 +109,32 @@ class AvgResNet(nn.Module):
         out = self.model.fc(out)
         return out
 
+class LandmarkPredictor(nn.Module):
 
-class CnnResNet(nn.Module):
-    def __init__(self, output_size=2*NUM_PTS):
-        super(CnnResNet, self).__init__()
-        self.model = models.resnet34(pretrained=True)
-        self.model.requires_grad_(True)
+    def __init__(self, *, backbone, emb_dim: int, num_landmarks: int, dropout_prob: float = 0.5,
+                 train_backbone: bool = True):
+        super().__init__()
 
-        fc_input = 512 * 4 ** 2
-        s1_input = 64 * 8 ** 2
-        s2_input = 32 * 16 ** 2
-        self.model.fc = nn.Linear(fc_input + s1_input + s2_input, output_size, bias=True)
-        self.model.fc.requires_grad_(True)
-        # self.model.layer4.requires_grad_(True)
-        # self.model.layer3.requires_grad_(True)
-        # self.model.layer2.requires_grad_(True)
-        self.x3_bottleneck = nn.Conv2d(256, 64, (1, 1))
-        self.x4_bottleneck = nn.Conv2d(128, 32, (1, 1))
+        self.regressor = backbone
+        self.regressor.requires_grad_(train_backbone)
+
+        # linear_output = 1024
+
+        self.regressor.fc = nn.Sequential(
+            nn.Flatten(start_dim=1),
+            nn.Linear(emb_dim, 2 * num_landmarks, bias=True)
+        )
 
     def forward(self, x):
-        x = self.model.conv1(x)
-        x = self.model.bn1(x)
-        x = self.model.relu(x)
-        x = self.model.maxpool(x)
+        """Return predcited positions: batch_size x num_landmarks * 2
+        Each row is: x0, y0, x1, y1, x2, y2, ...
+        """
+        images = x["image"]
+        return self.regressor(images)
 
-        x1 = self.model.layer1(x)
-        x2 = self.model.layer2(x1)
-        x3 = self.model.layer3(x2)
-        x4 = self.model.layer4(x3)
+def get_model(num_landmarks: int, dropout_prob: float, train_backbone: bool):
+    backbone = models.resnet50(pretrained=True)
 
-        x4 = torch.flatten(x4, 1)
-        x3 = self.x3_bottleneck(x3)
-        x3 = torch.flatten(x3, 1)
-        x2 = self.x4_bottleneck(x2)
-        x2 = torch.flatten(x2, 1)
-        out = torch.cat([x4, x3, x2], 1)
-        out = self.model.fc(out)
-        return out
+    return LandmarkPredictor(backbone=backbone, emb_dim=backbone.fc.in_features,
+                             num_landmarks=num_landmarks, dropout_prob=dropout_prob,
+                             train_backbone=train_backbone)
