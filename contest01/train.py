@@ -121,15 +121,15 @@ def main(args):
     ])
 
     print("Reading data...")
-    with open('./CV/contest01/bad_images.bd') as fin:
-        bad_img_names = fin.readlines()
-        bad_img_names = [i.strip() for i in bad_img_names]
-    train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train",
-                                             bad_img_names=bad_img_names)
+    #with open('./CV/contest01/bad_images.bd') as fin:
+    #    bad_img_names = fin.readlines()
+    #    bad_img_names = [i.strip() for i in bad_img_names]
+    train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train")
+                                             #bad_img_names=bad_img_names)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                   shuffle=True, drop_last=True)
-    val_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="val",
-                                           bad_img_names=bad_img_names)
+    val_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="val")
+                                           #bad_img_names=bad_img_names)
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                 shuffle=False, drop_last=False)
 
@@ -158,15 +158,13 @@ def main(args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=True)
     loss_fn = fnn.mse_loss
-    #lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    #    optimizer, mode='min', factor=1 / np.sqrt(10),
-    #    patience=4,
-    #    verbose=True, threshold=0.01,
-    #    threshold_mode='abs', cooldown=0,
-    #    min_lr=1e-6, eps=1e-08
-    #)
-    lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=args.learning_rate, final_div_factor=1e-6,
-                                                 steps_per_epoch =4, epochs=40)
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=1 / np.sqrt(10),
+        patience=4,
+        verbose=True, threshold=0.01,
+        threshold_mode='abs', cooldown=0,
+        min_lr=1e-6, eps=1e-08
+    )
 
     # 2. train & validate
     print("Ready for training...")
