@@ -76,7 +76,7 @@ class TransformByKeys(object):
 
 
 class ThousandLandmarksDataset(data.Dataset):
-    def __init__(self, root, transforms, split="train"):
+    def __init__(self, root, transforms, split="train", bad_img_names=None):
         super(ThousandLandmarksDataset, self).__init__()
         self.root = root
         landmark_file_name = os.path.join(root, 'landmarks.csv') if split != "test" \
@@ -85,6 +85,7 @@ class ThousandLandmarksDataset(data.Dataset):
 
         self.image_names = []
         self.landmarks = []
+        bad_img_names = bad_img_names or []
 
         with open(landmark_file_name, "rt") as fp:
             num_lines = sum(1 for line in fp)
@@ -100,6 +101,8 @@ class ThousandLandmarksDataset(data.Dataset):
                     continue  # has not reached start of val part of data
                 elements = line.strip().split("\t")
                 image_name = os.path.join(images_root, elements[0])
+                if image_name in bad_img_names:
+                    continue
                 self.image_names.append(image_name)
 
                 if split in ("train", "val"):

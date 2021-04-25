@@ -121,10 +121,15 @@ def main(args):
     ])
 
     print("Reading data...")
-    train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train")
+    with open('bad_images.bd') as fin:
+        bad_img_names = fin.readlines()
+        bad_img_names = [i.strip() for i in bad_img_names]
+    train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train",
+                                             bad_img_names=bad_img_names)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                   shuffle=True, drop_last=True)
-    val_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="val")
+    val_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="val",
+                                           bad_img_names=bad_img_names)
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                 shuffle=False, drop_last=False)
 
@@ -132,13 +137,13 @@ def main(args):
     print(device)
 
     print("Creating model...")
-    model = models.resnet18()
+    #model = models.resnet18()
     #model = models.resnext50_32x4d()
     #model.requires_grad_(True)
 
-    model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
+    #model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     #model.fc.requires_grad_(True)
-    #model = AvgResNet()
+    model = AvgResNet()
     try:
         checkpoint = torch.load(os.path.join("runs", f"{args.name}_best.pth"), map_location='cpu')
         model.load_state_dict(checkpoint, strict=True)
