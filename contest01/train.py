@@ -47,17 +47,13 @@ def train(model, loader, loss_fn, optimizer, device, scaler):
         images = batch["image"].to(device)  # B x 3 x CROP_SIZE x CROP_SIZE
         landmarks = batch["landmarks"]  # B x (2 * NUM_PTS)
 
-        with autocast():
-            pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
-            loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
+        loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
         train_loss.append(loss.item())
 
         optimizer.zero_grad()
-        #loss.backward()
-        #optimizer.step()
+        loss.backward()
+        optimizer.step()
 
     return np.mean(train_loss)
 
@@ -168,9 +164,8 @@ def main(args):
     # 2. train & validate
     print("Ready for training...")
     best_val_loss = np.inf
-    scaler = GradScaler()
     for epoch in range(args.epochs):
-        train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device, scaler=scaler)
+        train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
         val_loss, real_val_loss = validate(model, val_dataloader, loss_fn, device=device)
         lr_scheduler.step(val_loss)
         print("Epoch #{:2}:\ttrain loss: {:5.3}\tval loss: {:5.3} /{:5.3}".format(epoch, train_loss, val_loss, real_val_loss))
