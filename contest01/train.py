@@ -15,6 +15,7 @@ from torch.nn import functional as fnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.cuda.amp import autocast, GradScaler
 
 from utils import NUM_PTS, CROP_SIZE
 from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
@@ -39,20 +40,24 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def train(model, loader, loss_fn, optimizer, device):
+def train(model, loader, loss_fn, optimizer, device, scaler):
     model.train()
     train_loss = []
     for batch in tqdm.tqdm(loader, total=len(loader), desc="training..."):
         images = batch["image"].to(device)  # B x 3 x CROP_SIZE x CROP_SIZE
         landmarks = batch["landmarks"]  # B x (2 * NUM_PTS)
 
-        pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
-        loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
+        with autocast():
+            pred_landmarks = model(images).cpu()  # B x (2 * NUM_PTS)
+            loss = loss_fn(pred_landmarks, landmarks, reduction="mean")
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         train_loss.append(loss.item())
 
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        #loss.backward()
+        #optimizer.step()
 
     return np.mean(train_loss)
 
@@ -137,7 +142,7 @@ def main(args):
 
     #model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     #model.fc.requires_grad_(True)
-    model = CnnResNet()
+    model = AvgResNet()
     try:
         checkpoint = torch.load(os.path.join("runs", f"{args.name}_best.pth"), map_location='cpu')
         model.load_state_dict(checkpoint, strict=True)
@@ -163,8 +168,9 @@ def main(args):
     # 2. train & validate
     print("Ready for training...")
     best_val_loss = np.inf
+    scaler = GradScaler()
     for epoch in range(args.epochs):
-        train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
+        train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device, scaler=scaler)
         val_loss, real_val_loss = validate(model, val_dataloader, loss_fn, device=device)
         lr_scheduler.step(val_loss)
         print("Epoch #{:2}:\ttrain loss: {:5.3}\tval loss: {:5.3} /{:5.3}".format(epoch, train_loss, val_loss, real_val_loss))
