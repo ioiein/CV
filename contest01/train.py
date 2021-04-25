@@ -138,7 +138,7 @@ def main(args):
 
     #model.fc = nn.Linear(model.fc.in_features, 2 * NUM_PTS, bias=True)
     #model.fc.requires_grad_(True)
-    model = AvgResNet()
+    model = CnnResNet()
     try:
         checkpoint = torch.load(os.path.join("runs", f"{args.name}_best.pth"), map_location='cpu')
         model.load_state_dict(checkpoint, strict=True)
