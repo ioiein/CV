@@ -5,6 +5,7 @@ import pickle
 import sys
 from argparse import ArgumentParser
 
+import cv2
 import numpy as np
 import torch
 import torch.nn as nn
@@ -15,12 +16,13 @@ from torch.nn import functional as fnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.cuda.amp import autocast, GradScaler
+import albumentations as A
 
 from utils import NUM_PTS, CROP_SIZE
 from utils import ScaleMinSideToSize, CropCenter, TransformByKeys
 from utils import ThousandLandmarksDataset
 from utils import restore_landmarks_batch, create_submission
+from utils import FaceHorizontalFlip, ToTensorV3
 
 from model import AvgResNet
 
@@ -112,24 +114,43 @@ def main(args):
     os.makedirs("runs", exist_ok=True)
 
     # 1. prepare data & models
-    train_transforms = transforms.Compose([
-        ScaleMinSideToSize((CROP_SIZE, CROP_SIZE)),
-        CropCenter(CROP_SIZE),
-        TransformByKeys(transforms.ToPILImage(), ("image",)),
-        TransformByKeys(transforms.ToTensor(), ("image",)),
-        TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ("image",)),
+    #train_transforms = transforms.Compose([
+    #    ScaleMinSideToSize((CROP_SIZE, CROP_SIZE)),
+    #    CropCenter(CROP_SIZE),
+    #    TransformByKeys(transforms.ToPILImage(), ("image",)),
+    #    TransformByKeys(transforms.ToTensor(), ("image",)),
+    #    TransformByKeys(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), ("image",)),
+    #])
+
+    train_transforms = A.Compose([
+        FaceHorizontalFlip(p=0.1),
+        A.RandomBrightness(limit=0.2, p=0.1),
+        A.RandomContrast(limit=0.2, p=0.1),
+        A.Blur(blur_limit=3, p=0.1),
+        A.Rotate(border_mode=cv2.BORDER_CONSTANT, limit=20, p=0.1),
+        A.SmallestMaxSize(CROP_SIZE),
+        A.CenterCrop(CROP_SIZE, CROP_SIZE),
+        A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ToTensorV3()
+    ], keypoint_params=A.KeypointParams(format='xy', remove_invisible=False))
+    test_transforms = A.Compose([
+        A.SmallestMaxSize(CROP_SIZE),
+        A.CenterCrop(CROP_SIZE, CROP_SIZE),
+        A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ToTensorV3()
     ])
 
+
     print("Reading data...")
-    with open('bad_images.bd') as fin:
-        bad_img_names = fin.readlines()
-        bad_img_names = [i.strip() for i in bad_img_names]
+    #with open('bad_images.bd') as fin:
+    #    bad_img_names = fin.readlines()
+    #    bad_img_names = [i.strip() for i in bad_img_names]
     train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train",
-                                             bad_img_names=bad_img_names)
+                                             bad_img_names=None)#bad_img_names)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                   shuffle=True, drop_last=True)
     val_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="val",
-                                           bad_img_names=bad_img_names)
+                                           bad_img_names=None)#bad_img_names)
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                 shuffle=False, drop_last=False)
 
@@ -180,7 +201,7 @@ def main(args):
                 torch.save(model.state_dict(), fp)
 
     # 3. predict
-    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), train_transforms, split="test")
+    test_dataset = ThousandLandmarksDataset(os.path.join(args.data, "test"), test_transforms, split="test")
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                  shuffle=False, drop_last=False)
 
