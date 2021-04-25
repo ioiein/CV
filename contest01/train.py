@@ -165,7 +165,8 @@ def main(args):
     #    threshold_mode='abs', cooldown=0,
     #    min_lr=1e-6, eps=1e-08
     #)
-    lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=args.learning_rate, final_div_factor=1e-6)
+    lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=args.learning_rate, final_div_factor=1e-6,
+                                                 total_steps=4)
 
     # 2. train & validate
     print("Ready for training...")
