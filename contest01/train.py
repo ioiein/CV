@@ -121,7 +121,7 @@ def main(args):
     ])
 
     print("Reading data...")
-    with open('bad_images.bd') as fin:
+    with open('./CV/contest01/bad_images.bd') as fin:
         bad_img_names = fin.readlines()
         bad_img_names = [i.strip() for i in bad_img_names]
     train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train",
