@@ -121,15 +121,15 @@ def main(args):
     ])
 
     print("Reading data...")
-    #with open('./CV/contest01/bad_images.bd') as fin:
-    #    bad_img_names = fin.readlines()
-    #    bad_img_names = [i.strip() for i in bad_img_names]
-    train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train")
-                                             #bad_img_names=bad_img_names)
+    with open('./CV/contest01/bad_images.bd') as fin:
+        bad_img_names = fin.readlines()
+        bad_img_names = [i.strip() for i in bad_img_names]
+    train_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="train",
+                                             bad_img_names=bad_img_names)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                   shuffle=True, drop_last=True)
-    val_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="val")
-                                           #bad_img_names=bad_img_names)
+    val_dataset = ThousandLandmarksDataset(os.path.join(args.data, "train"), train_transforms, split="val",
+                                           bad_img_names=bad_img_names)
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True,
                                 shuffle=False, drop_last=False)
 
