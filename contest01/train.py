@@ -174,7 +174,7 @@ def main(args):
     for epoch in range(args.epochs):
         train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
         val_loss, real_val_loss = validate(model, val_dataloader, loss_fn, device=device)
-        lr_scheduler.step(val_loss)
+        lr_scheduler.step()
         print("Epoch #{:2}:\ttrain loss: {:5.3}\tval loss: {:5.3} /{:5.3}".format(epoch, train_loss, val_loss, real_val_loss))
         if val_loss < best_val_loss:
             best_val_loss = val_loss
