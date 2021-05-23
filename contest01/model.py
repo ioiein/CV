@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 import torch
+import timm
 from utils import NUM_PTS, CROP_SIZE
 
 
@@ -109,3 +110,27 @@ class AvgResNet(nn.Module):
         out = self.model.fc(out)
         return out
 
+
+class EfficientNet(nn.Module):
+    def __init__(self, output_size=2*NUM_PTS):
+        super(EfficientNet, self).__init__()
+        self.model = timm.create_model('efficientnet_b0', pretrained=True)
+        self.model.requires_grad_(False)
+
+        fc_input = 1280 * (CROP_SIZE // 32) ** 2
+
+        self.fc = nn.Linear(fc_input, output_size, bias=True)
+        self.model.conv_head.requires_grad_(True)
+        self.model.blocks[-4:].requires_grad_(True)
+
+    def forward(self, x):
+        x = self.model.forward_features(x)
+        x = torch.flatten(x, 1)
+        out = self.fc(x)
+        return out
+
+
+def resnet_d(output_size=2*NUM_PTS):
+    model = timm.create_model('resnet34d', pretrained=True)
+    model.fc = nn.Linear(512, output_size, bias=True)
+    return model
