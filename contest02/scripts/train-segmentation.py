@@ -109,13 +109,13 @@ def main(args):
     criterion = lambda x, y: (args.weight_bce * nn.BCELoss()(x, y), (1. - args.weight_bce) * dice_loss(x, y))
 
     train_transforms = get_train_transforms(args.image_size)
-    train_dataset = DetectionDataset(args.data_path, os.path.join("./", "train_segmentation.json"),
+    train_dataset = DetectionDataset(args.data_path, os.path.join(args.data_path, "train_segmentation.json"),
                                      transforms=train_transforms, split="train")
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=8,
                                   pin_memory=True, shuffle=True, drop_last=True)
 
     val_transforms = get_val_transforms(args.image_size)
-    val_dataset = DetectionDataset(args.data_path, os.path.join("./", "train_segmentation.json"),
+    val_dataset = DetectionDataset(args.data_path, os.path.join(args.data_path, "train_segmentation.json"),
                                    transforms=val_transforms, split="val")
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=4,
                                 pin_memory=True, shuffle=False, drop_last=False)
