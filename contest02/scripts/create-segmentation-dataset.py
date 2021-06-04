@@ -46,7 +46,8 @@ def main(args):
         new_item["mask"] = mask_filename
         config_segmentation.append(new_item)
 
-    output_config_filename = os.path.join(args.data_dir, "train_segmentation.json")
+    #output_config_filename = os.path.join(args.data_dir, "train_segmentation.json")
+    output_config_filename = os.path.join("./", "train_segmentation.json")
     with open(output_config_filename, "wt") as fp:
         json.dump(config_segmentation, fp)
 
