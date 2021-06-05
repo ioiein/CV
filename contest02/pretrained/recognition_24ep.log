@@ -1,0 +1,87 @@
+2021-04-28 18:28:31 Start training with params:
+2021-04-28 18:28:31 Argument augs: 0
+2021-04-28 18:28:31 Argument batch_size: 128
+2021-04-28 18:28:31 Argument data_path: 'data/data'
+2021-04-28 18:28:31 Argument epochs: 24
+2021-04-28 18:28:31 Argument input_wh: '320x64'
+2021-04-28 18:28:31 Argument load: None
+2021-04-28 18:28:31 Argument lr: 0.0003
+2021-04-28 18:28:31 Argument lr_gamma: None
+2021-04-28 18:28:31 Argument lr_step: None
+2021-04-28 18:28:31 Argument output_dir: 'runs/pretrained_recognition_24ep'
+2021-04-28 18:28:31 Argument weight_decay: 1e-05
+2021-04-28 18:28:35 Model type: CRNN
+2021-04-28 18:28:35 Length of train / val = 21444/ 5361
+2021-04-28 18:28:35 Number of batches of train / val = 168 / 42
+2021-04-28 18:28:35 Starting epoch 1 / 24.
+2021-04-28 18:28:58 Epoch finished! Loss: 2.20798
+2021-04-28 18:29:00 Valid acc: 0.06697, acc_ed: 2.03283 (best)
+2021-04-28 18:29:00 Starting epoch 2 / 24.
+2021-04-28 18:29:24 Epoch finished! Loss: 0.43759
+2021-04-28 18:29:28 Valid acc: 0.89256, acc_ed: 0.17180 (best)
+2021-04-28 18:29:28 Starting epoch 3 / 24.
+2021-04-28 18:29:58 Epoch finished! Loss: 0.08952
+2021-04-28 18:30:01 Valid acc: 0.91438, acc_ed: 0.13356 (best)
+2021-04-28 18:30:01 Starting epoch 4 / 24.
+2021-04-28 18:30:31 Epoch finished! Loss: 0.04451
+2021-04-28 18:30:35 Valid acc: 0.92371, acc_ed: 0.11490 (best)
+2021-04-28 18:30:35 Starting epoch 5 / 24.
+2021-04-28 18:31:04 Epoch finished! Loss: 0.02712
+2021-04-28 18:31:08 Valid acc: 0.92016, acc_ed: 0.11714 (best 0.92371)
+2021-04-28 18:31:08 Starting epoch 6 / 24.
+2021-04-28 18:31:37 Epoch finished! Loss: 0.01712
+2021-04-28 18:31:41 Valid acc: 0.92371, acc_ed: 0.12031 (best 0.92371)
+2021-04-28 18:31:41 Starting epoch 7 / 24.
+2021-04-28 18:32:10 Epoch finished! Loss: 0.01091
+2021-04-28 18:32:14 Valid acc: 0.92632, acc_ed: 0.10856 (best)
+2021-04-28 18:32:14 Starting epoch 8 / 24.
+2021-04-28 18:32:43 Epoch finished! Loss: 0.00745
+2021-04-28 18:32:47 Valid acc: 0.93080, acc_ed: 0.10427 (best)
+2021-04-28 18:32:47 Starting epoch 9 / 24.
+2021-04-28 18:33:16 Epoch finished! Loss: 0.00950
+2021-04-28 18:33:20 Valid acc: 0.91625, acc_ed: 0.12535 (best 0.93080)
+2021-04-28 18:33:20 Starting epoch 10 / 24.
+2021-04-28 18:33:49 Epoch finished! Loss: 0.01545
+2021-04-28 18:33:53 Valid acc: 0.91587, acc_ed: 0.13374 (best 0.93080)
+2021-04-28 18:33:53 Starting epoch 11 / 24.
+2021-04-28 18:34:22 Epoch finished! Loss: 0.01581
+2021-04-28 18:34:26 Valid acc: 0.91420, acc_ed: 0.12945 (best 0.93080)
+2021-04-28 18:34:26 Starting epoch 12 / 24.
+2021-04-28 18:34:55 Epoch finished! Loss: 0.01303
+2021-04-28 18:34:58 Valid acc: 0.91998, acc_ed: 0.11789 (best 0.93080)
+2021-04-28 18:34:58 Starting epoch 13 / 24.
+2021-04-28 18:35:28 Epoch finished! Loss: 0.00799
+2021-04-28 18:35:31 Valid acc: 0.92445, acc_ed: 0.11024 (best 0.93080)
+2021-04-28 18:35:31 Starting epoch 14 / 24.
+2021-04-28 18:36:00 Epoch finished! Loss: 0.00555
+2021-04-28 18:36:04 Valid acc: 0.93303, acc_ed: 0.09905 (best)
+2021-04-28 18:36:04 Starting epoch 15 / 24.
+2021-04-28 18:36:33 Epoch finished! Loss: 0.00342
+2021-04-28 18:36:37 Valid acc: 0.93695, acc_ed: 0.09383 (best)
+2021-04-28 18:36:37 Starting epoch 16 / 24.
+2021-04-28 18:37:07 Epoch finished! Loss: 0.00195
+2021-04-28 18:37:11 Valid acc: 0.93733, acc_ed: 0.09439 (best)
+2021-04-28 18:37:11 Starting epoch 17 / 24.
+2021-04-28 18:37:39 Epoch finished! Loss: 0.00128
+2021-04-28 18:37:42 Valid acc: 0.93639, acc_ed: 0.09439 (best 0.93733)
+2021-04-28 18:37:42 Starting epoch 18 / 24.
+2021-04-28 18:38:06 Epoch finished! Loss: 0.00122
+2021-04-28 18:38:09 Valid acc: 0.94031, acc_ed: 0.08991 (best)
+2021-04-28 18:38:09 Starting epoch 19 / 24.
+2021-04-28 18:38:32 Epoch finished! Loss: 0.00119
+2021-04-28 18:38:35 Valid acc: 0.93285, acc_ed: 0.10054 (best 0.94031)
+2021-04-28 18:38:35 Starting epoch 20 / 24.
+2021-04-28 18:38:58 Epoch finished! Loss: 0.01157
+2021-04-28 18:39:01 Valid acc: 0.90450, acc_ed: 0.13729 (best 0.94031)
+2021-04-28 18:39:01 Starting epoch 21 / 24.
+2021-04-28 18:39:25 Epoch finished! Loss: 0.01637
+2021-04-28 18:39:28 Valid acc: 0.91550, acc_ed: 0.12796 (best 0.94031)
+2021-04-28 18:39:28 Starting epoch 22 / 24.
+2021-04-28 18:39:58 Epoch finished! Loss: 0.00647
+2021-04-28 18:40:02 Valid acc: 0.93154, acc_ed: 0.10763 (best 0.94031)
+2021-04-28 18:40:02 Starting epoch 23 / 24.
+2021-04-28 18:40:34 Epoch finished! Loss: 0.00313
+2021-04-28 18:40:38 Valid acc: 0.93192, acc_ed: 0.10427 (best 0.94031)
+2021-04-28 18:40:38 Starting epoch 24 / 24.
+2021-04-28 18:41:09 Epoch finished! Loss: 0.00360
+2021-04-28 18:41:13 Valid acc: 0.93210, acc_ed: 0.10334 (best 0.94031)

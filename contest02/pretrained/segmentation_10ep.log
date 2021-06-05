@@ -1,0 +1,45 @@
+2021-04-28 18:39:28 Start training with params:
+2021-04-28 18:39:28 Argument batch_size: 80
+2021-04-28 18:39:28 Argument data_path: 'data/data'
+2021-04-28 18:39:28 Argument epochs: 10
+2021-04-28 18:39:28 Argument image_size: 256
+2021-04-28 18:39:28 Argument load: None
+2021-04-28 18:39:28 Argument lr: 0.0003
+2021-04-28 18:39:28 Argument lr_gamma: None
+2021-04-28 18:39:28 Argument lr_step: None
+2021-04-28 18:39:28 Argument output_dir: 'runs/pretrained_segmentation_10ep'
+2021-04-28 18:39:28 Argument weight_bce: 1
+2021-04-28 18:39:28 Argument weight_decay: 1e-06
+2021-04-28 18:39:32 Model type: Unet
+2021-04-28 18:39:32 Length of train / val = 20505 / 5127
+2021-04-28 18:39:32 Number of batches of train / val = 256 / 65
+2021-04-28 18:39:32 Starting epoch 1/10.
+2021-04-28 18:46:15 Epoch finished! Loss: 0.18312 (0.18312 | 0.00000)
+2021-04-28 18:48:37 Validation Dice Coeff: 0.891 (best)
+2021-04-28 18:48:37 Starting epoch 2/10.
+2021-04-28 18:55:49 Epoch finished! Loss: 0.02462 (0.02462 | 0.00000)
+2021-04-28 18:58:13 Validation Dice Coeff: 0.911 (best)
+2021-04-28 18:58:13 Starting epoch 3/10.
+2021-04-28 19:05:29 Epoch finished! Loss: 0.01115 (0.01115 | 0.00000)
+2021-04-28 19:07:45 Validation Dice Coeff: 0.89776 (best 0.91065)
+2021-04-28 19:07:45 Starting epoch 4/10.
+2021-04-28 19:15:08 Epoch finished! Loss: 0.00734 (0.00734 | 0.00000)
+2021-04-28 19:17:27 Validation Dice Coeff: 0.923 (best)
+2021-04-28 19:17:27 Starting epoch 5/10.
+2021-04-28 19:24:39 Epoch finished! Loss: 0.00566 (0.00566 | 0.00000)
+2021-04-28 19:26:54 Validation Dice Coeff: 0.90070 (best 0.92345)
+2021-04-28 19:26:54 Starting epoch 6/10.
+2021-04-28 19:34:12 Epoch finished! Loss: 0.00495 (0.00495 | 0.00000)
+2021-04-28 19:36:36 Validation Dice Coeff: 0.71847 (best 0.92345)
+2021-04-28 19:36:36 Starting epoch 7/10.
+2021-04-28 19:43:51 Epoch finished! Loss: 0.00495 (0.00495 | 0.00000)
+2021-04-28 19:46:01 Validation Dice Coeff: 0.91962 (best 0.92345)
+2021-04-28 19:46:01 Starting epoch 8/10.
+2021-04-28 19:53:19 Epoch finished! Loss: 0.00433 (0.00433 | 0.00000)
+2021-04-28 19:55:39 Validation Dice Coeff: 0.91906 (best 0.92345)
+2021-04-28 19:55:39 Starting epoch 9/10.
+2021-04-28 20:03:04 Epoch finished! Loss: 0.00419 (0.00419 | 0.00000)
+2021-04-28 20:05:29 Validation Dice Coeff: 0.92112 (best 0.92345)
+2021-04-28 20:05:29 Starting epoch 10/10.
+2021-04-28 20:12:56 Epoch finished! Loss: 0.00395 (0.00395 | 0.00000)
+2021-04-28 20:15:20 Validation Dice Coeff: 0.92281 (best 0.92345)
