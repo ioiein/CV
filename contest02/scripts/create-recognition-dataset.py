@@ -19,10 +19,10 @@ def parse_arguments():
 
 def get_crop(image, box):
     # TODO TIP: Maybe adding some margin could help.
-    x_min = np.clip(min(box[:, 0]), -5, 0, image.shape[1])
-    x_max = np.clip(max(box[:, 0]), +5, 0, image.shape[1])
-    y_min = np.clip(min(box[:, 1]), -5, 0, image.shape[0])
-    y_max = np.clip(max(box[:, 1]), +5, 0, image.shape[0])
+    x_min = np.clip(min(box[:, 0]) - 5, 0, image.shape[1])
+    x_max = np.clip(max(box[:, 0]) + 5, 0, image.shape[1])
+    y_min = np.clip(min(box[:, 1]) - 5, 0, image.shape[0])
+    y_max = np.clip(max(box[:, 1]) + 5, 0, image.shape[0])
     return image[y_min: y_max, x_min: x_max]
 
 
