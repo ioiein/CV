@@ -94,7 +94,7 @@ class Flip(object):
 
 
 class Normalize(object):
-    def __init__(self, mean=(0.5, 0.5, 0.5), std=(0.25, 0.25, 0.25)):
+    def __init__(self, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
         self.mean = np.asarray(mean).reshape((1, 1, 3)).astype(np.float32)
         self.std = np.asarray(std).reshape((1, 1, 3)).astype(np.float32)
 

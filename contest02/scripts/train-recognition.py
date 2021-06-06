@@ -30,6 +30,7 @@ def parse_arguments():
     parser.add_argument("--load", "-l", dest="load", type=str, help="pretrained weights", default=None)
     parser.add_argument("-o", "--output_dir", dest="output_dir", default="runs/recognition_baseline",
                         help="dir to save log and models")
+    parser.add_argument("--gen", "-g", dest="gen", type=bool, help="use generated data", default=False)
     return parser.parse_args()
 
 
@@ -126,13 +127,13 @@ def main(args):
     image_w, image_h = list(map(int, args.input_wh.split('x')))
     train_transforms = get_train_transforms((image_w, image_h), args.augs)
     train_dataset = RecognitionDataset(args.data_path, os.path.join(args.data_path, "train_recognition.json"),
-                                       abc=abc, transforms=train_transforms, split="train")
+                                       abc=abc, transforms=train_transforms, split="train", generated_data=args.gen)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=8,
                                   collate_fn=train_dataset.collate_fn)
 
     val_transforms = get_val_transforms((image_w, image_h))
     val_dataset = RecognitionDataset(args.data_path, os.path.join(args.data_path, "train_recognition.json"),
-                                     abc=abc, transforms=val_transforms, split="val")
+                                     abc=abc, transforms=val_transforms, split="val", generated_data=args.gen)
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8,
                                 collate_fn=val_dataset.collate_fn)
 

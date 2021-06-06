@@ -4,20 +4,25 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from .utils import abc, is_valid_str, convert_to_eng
+from os import listdir
+from os.path import isfile, join
 
 TRAIN_SIZE = 0.8
 
 
 class RecognitionDataset(Dataset):
 
-    def __init__(self, data_path, config_file, abc=abc, transforms=None, split="train"):
+    def __init__(self, data_path, config_file, abc=abc, transforms=None, split="train", generated_data=False):
         super(RecognitionDataset, self).__init__()
         self.data_path = data_path
         self.abc = abc
         self.transforms = transforms
         self.split = split
 
-        self.image_filenames, self.texts = self._parse_root_(config_file)
+        if generated_data:
+            self.image_filenames, self.texts = self._parse_generated(data_path)
+        else:
+            self.image_filenames, self.texts = self._parse_root_(config_file)
         if self.split is not None:
             train_size = int(len(self.image_filenames) * TRAIN_SIZE)
             if self.split == "train":
@@ -28,6 +33,38 @@ class RecognitionDataset(Dataset):
                 self.texts = self.texts[train_size:]
             else:
                 raise NotImplementedError(split)
+
+
+    def _parse_generated(self, path):
+        onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+        image_filenames, texts = [], []
+        mapping = {
+            'а': 'A',
+            'в': 'B',
+            'с': 'C',
+            'е': 'E',
+            'н': 'H',
+            'к': 'K',
+            'м': 'M',
+            'о': 'O',
+            'р': 'P',
+            'т': 'T',
+            'х': 'X',
+            'у': 'Y',
+            '0': '0'
+        }
+        for item in onlyfiles:
+            image_filenames.append(item)
+            text = ''
+            sample = item.split(".")[0]
+            for s in sample:
+                try:
+                    text += mapping[s]
+                except KeyError:
+                    text += s
+            texts.append(text)
+        return image_filenames, texts
+
 
     def _parse_root_(self, config_file):
         with open(config_file, "rt") as f:
